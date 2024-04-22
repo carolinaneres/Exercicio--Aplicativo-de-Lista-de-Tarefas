@@ -1,0 +1,129 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+void main() => runApp(MyApp());
+
+class Task {
+  final String title;
+
+  Task(this.title);
+}
+
+class TaskModel extends ChangeNotifier {
+  List<Task> _tasks = [];
+
+  List<Task> get tasks => _tasks;
+
+  void addTask(String title) {
+    _tasks.add(Task(title));
+    notifyListeners();
+  }
+
+  void removeTask(int index) {
+    _tasks.removeAt(index);
+    notifyListeners();
+  }
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'To-Do List',
+      theme: ThemeData(primarySwatch: Colors.pink),
+      home: ChangeNotifierProvider(
+        create: (_) => TaskModel(),
+        child: TaskListScreen(),
+      ),
+    );
+  }
+}
+
+class TaskListScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Lista de Tarefas:'),
+      ),
+      body: Consumer<TaskModel>(
+        builder: (context, taskModel, child) {
+          return ListView.builder(
+            itemCount: taskModel.tasks.length,
+            itemBuilder: (context, index) {
+              return Dismissible(
+                key: Key(taskModel.tasks[index].title),
+                direction: DismissDirection.endToStart,
+                onDismissed: (direction) {
+                  taskModel.removeTask(index);
+                },
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  color: Colors.red,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                child: ListTile(
+                  title: Text(taskModel.tasks[index].title),
+                ),
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final newTask = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AddTaskScreen()),
+          );
+          if (newTask != null) {
+            Provider.of<TaskModel>(context, listen: false).addTask(newTask);
+          }
+        },
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class AddTaskScreen extends StatelessWidget {
+  final TextEditingController _taskController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Adicionar Tarefa'),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _taskController,
+              decoration: InputDecoration(
+                labelText: 'Título da Tarefa',
+              ),
+            ),
+            SizedBox(height: 16.0),
+            ElevatedButton(
+              onPressed: () {
+                if (_taskController.text.isNotEmpty) {
+                  Navigator.pop(context, _taskController.text);
+                }
+              },
+              child: Text('Adicionar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
